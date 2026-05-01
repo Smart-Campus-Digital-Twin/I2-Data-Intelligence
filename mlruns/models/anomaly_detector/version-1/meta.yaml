@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1777616599275
+current_stage: None
+description: null
+last_updated_timestamp: 1777616599275
+name: anomaly_detector
+run_id: ca85e5582a9c492993145b102ac139ea
+run_link: null
+source: file:///D:/Git/campustwin/ml/I2-Data-Intelligence/mlruns/757974836050262917/ca85e5582a9c492993145b102ac139ea/artifacts/model
+status: READY
+status_message: null
+storage_location: file:///D:/Git/campustwin/ml/I2-Data-Intelligence/mlruns/757974836050262917/ca85e5582a9c492993145b102ac139ea/artifacts/model
+user_id: null
+version: 1

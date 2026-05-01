@@ -1,0 +1,32 @@
+artifact_path: model
+flavors:
+  python_function:
+    data: model.xgb
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.xgboost
+    python_version: 3.11.9
+  xgboost:
+    code: null
+    data: model.xgb
+    model_class: xgboost.sklearn.XGBRegressor
+    model_format: xgb
+    xgb_version: 2.0.3
+mlflow_version: 2.10.2
+model_size_bytes: 218132
+model_uuid: 62cd2e12829e4a09b82b243b66a4159a
+run_id: e27a5ace0fd74c4bb8b544af3ada5cc9
+signature:
+  inputs: '[{"type": "double", "name": "outside_temp", "required": true}, {"type":
+    "double", "name": "total_occupancy", "required": true}, {"type": "double", "name":
+    "hour", "required": true}, {"type": "double", "name": "day_of_week", "required":
+    true}, {"type": "double", "name": "is_weekend", "required": true}, {"type": "double",
+    "name": "energy_kw_lag_1", "required": true}, {"type": "double", "name": "energy_kw_lag_24",
+    "required": true}, {"type": "double", "name": "outside_temp_lag_1", "required":
+    true}, {"type": "double", "name": "outside_temp_lag_24", "required": true}, {"type":
+    "double", "name": "total_occupancy_lag_1", "required": true}, {"type": "double",
+    "name": "total_occupancy_lag_24", "required": true}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float32", "shape": [-1]}}]'
+  params: null
+utc_time_created: '2026-05-01 05:59:24.034170'

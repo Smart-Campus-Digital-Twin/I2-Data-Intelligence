@@ -1,0 +1,15 @@
+artifact_uri: file:///D:/Git/campustwin/ml/I2-Data-Intelligence/mlruns/854200804800573504/c5589b5b6bd14a92ad727edf137e341c/artifacts
+end_time: 1777615188462
+entry_point_name: ''
+experiment_id: '854200804800573504'
+lifecycle_stage: active
+run_id: c5589b5b6bd14a92ad727edf137e341c
+run_name: abrasive-ray-546
+run_uuid: c5589b5b6bd14a92ad727edf137e341c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777615181919
+status: 3
+tags: []
+user_id: DEW_X
