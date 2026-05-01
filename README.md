@@ -36,3 +36,6 @@ This project contains the machine learning core for the Smart Campus Digital Twi
 - `src/api/`: Outbound FastAPI service endpoints.
 - `src/monitoring/`: Metrics exporters for Prometheus.
 - `notebooks/`: Exporatory code and experiments.
+
+## Contributors
+- Ajan
