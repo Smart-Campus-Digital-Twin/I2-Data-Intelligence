@@ -1,0 +1,48 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+  },
+  "launch": {
+    "configurations": [
+      {
+        "name": "Run Member 3 Broadcast Service",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["app.main:asgi_app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+        "console": "integratedTerminal",
+        "justMyCode": true
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run Member 3 Service",
+        "type": "shell",
+        "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+        "args": ["-m", "uvicorn", "app.main:asgi_app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+        "group": "build",
+        "problemMatcher": []
+      },
+      {
+        "label": "Run Tests",
+        "type": "shell",
+        "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+        "args": ["-m", "pytest", "-q"],
+        "group": "test",
+        "problemMatcher": []
+      }
+    ]
+  }
+}
