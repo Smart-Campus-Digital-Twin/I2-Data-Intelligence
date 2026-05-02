@@ -6,8 +6,8 @@ This repository contains the complete backend infrastructure for the Smart Campu
 
 The following 9 services are included in this stack:
 
-1.  **Apache Kafka**: A distributed event streaming platform for real-time data pipelines.
-2.  **Schema Registry**: Manages schemas for Kafka topics.
+1.  **Kafka (Confluent)**: A production-grade distributed event streaming platform running in KRaft mode with optimized Schema Registry integration.
+2.  **Schema Registry**: Manages schemas for Kafka topics with reliable coordination.
 3.  **MQTT Broker**: For IoT device communication.
 4.  **TimescaleDB**: A PostgreSQL database with time-series superpowers for sensor data.
 5.  **Redis**: In-memory data store for caching and real-time analytics.
@@ -73,7 +73,11 @@ This script runs over 40 automated checks to ensure every component of the stack
 
 ## Design & Implementation Notes
 
-*   **Kafka Image**: The initial plan was to use `bitnami/kafka:3.6`. However, this image tag is no longer publicly available as Bitnami has transitioned its main `bitnami/kafka` repository to a commercial model without public tags. We have instead used the official `apache/kafka:latest` image, which runs in the modern, Zookeeper-less KRaft mode, simplifying the overall architecture.
+*   **Kafka Image**: We use `confluentinc/cp-kafka:7.6.0` (Confluent's production-grade Kafka distribution) instead of alternatives:
+    - **Not `bitnami/kafka`**: This image is no longer publicly available as Bitnami has transitioned its main `bitnami/kafka` repository to a commercial model without public tags.
+    - **Not `apache/kafka`**: While available, the official Apache image lacks optimized integration with Schema Registry, causing consumer group coordination timeouts during initialization.
+    - **Why Confluent**: Provides better integration and reliability with Schema Registry coordination, is production-tested, and includes optimized Kafka broker binaries for seamless group coordination and leader election.
+*   **KRaft Mode**: The Kafka broker runs in the modern, Zookeeper-less KRaft mode for simplified architecture and better resource efficiency.
 
 ## Stopping the Environment
 

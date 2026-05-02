@@ -1,51 +1,53 @@
 # I2-Data-Intelligence — Complete Local Development Stack
-# Services: TimescaleDB, Redis, Kafka, Schema Registry, MQTT, MLflow, InfluxDB
-#
-# Usage:
-#   docker compose up -d                    # Start all services
-#   docker compose ps                        # Check status
-#   docker compose logs -f kafka            # Follow logs for specific service
-#   docker compose down -v                  # Stop and remove volumes
+# Fixed Version: Kafka + Schema Registry + MLflow + Timescale + Redis + MQTT + InfluxDB
+# Windows + Docker Desktop Friendly
 
 services:
+
   # ============================================================================
-  # ZOOKEEPER-FREE KAFKA (KRaft mode) — apache/kafka:latest
-  # Port: 9092 (external), 29092 (internal broker), 29093 (controller)
-  # Topics auto-created: sensor.raw (12 partitions), sensor.processed (6),
-  #                      sensor.anomaly (3), ml.predictions (3),
-  #                      node.heartbeat (3), sensor.dlq (3)
+  # KAFKA (Confluent 7.6.0 / KRaft Mode)
   # ============================================================================
   kafka:
-    image: apache/kafka:latest
+    image: confluentinc/cp-kafka:7.6.0
     container_name: i2-kafka
     hostname: kafka
     ports:
       - "9092:9092"
+
     environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
+
       KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,EXTERNAL://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_NUM_PARTITIONS: 12
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_MIN_INSYNC_REPLICAS: 1
-      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 3
-      KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 3
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_MESSAGE_MAX_BYTES: 1048576
       KAFKA_LOG_RETENTION_HOURS: 168
-      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_MESSAGE_MAX_BYTES: 1048576
+
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
     volumes:
       - kafka-data:/var/lib/kafka/data
+
     networks:
       - dev-tools
+
     healthcheck:
-      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1" ]
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -53,308 +55,272 @@ services:
 
   # ============================================================================
   # KAFKA TOPIC INITIALIZER
-  # Runs once after Kafka is healthy to create all required topics
-  # with the correct partition counts as specified in the SRS
   # ============================================================================
   kafka-init:
-    image: apache/kafka:latest
+    image: confluentinc/cp-kafka:7.6.0
     container_name: i2-kafka-init
+
     depends_on:
       kafka:
         condition: service_healthy
+
     networks:
       - dev-tools
+
     entrypoint: [ "/bin/bash", "-c" ]
+
     command: |
-      "
-      echo 'Creating Kafka topics...'
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.raw      --partitions 12 --replication-factor 1
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.processed --partitions 6  --replication-factor 1
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.anomaly  --partitions 3  --replication-factor 1
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic ml.predictions  --partitions 3  --replication-factor 1
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic node.heartbeat  --partitions 3  --replication-factor 1
-      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.dlq      --partitions 3  --replication-factor 1
-      echo 'All topics created successfully.'
-      /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server kafka:29092
-      "
-    restart: on-failure
+      echo "Creating Kafka topics..."
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.raw       --partitions 12 --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.processed --partitions 6  --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.anomaly   --partitions 3  --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic ml.predictions   --partitions 3  --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic node.heartbeat   --partitions 3  --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --topic sensor.dlq       --partitions 3  --replication-factor 1
+
+      echo "Topics created successfully."
+
+    restart: "no"
 
   # ============================================================================
   # SCHEMA REGISTRY
-  # Port: 8081
   # ============================================================================
   schema-registry:
     image: confluentinc/cp-schema-registry:7.6.0
     container_name: i2-schema-registry
     hostname: schema-registry
+
     ports:
       - "8081:8081"
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-      SCHEMA_REGISTRY_DEBUG: "false"
-      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+
     depends_on:
       kafka:
         condition: service_healthy
+
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+
     networks:
       - dev-tools
+
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8081/subjects || exit 1" ]
-      interval: 10s
+      test: [ "CMD-SHELL", "curl -fs http://localhost:8081/subjects || exit 1" ]
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 45s
 
   # ============================================================================
-  # MQTT BROKER (Eclipse Mosquitto)
-  # Port: 1883 (MQTT), 9001 (WebSocket)
-  # Config: allow anonymous, max_inflight 20, persistence enabled
+  # MQTT BROKER
   # ============================================================================
   mqtt-broker:
     image: eclipse-mosquitto:2
     container_name: i2-mqtt-broker
     hostname: mqtt-broker
+
     ports:
       - "1883:1883"
       - "9001:9001"
+
     volumes:
       - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mqtt-data:/mosquitto/data
       - mqtt-logs:/mosquitto/log
+
     networks:
       - dev-tools
+
     healthcheck:
-      test: [ "CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3" ]
+      test: [ "CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/#", "-C", "1", "-W", "3" ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
 
   # ============================================================================
-  # TIMESCALEDB (Main Analytics Database)
-  # Port: 5432
-  # Database: campustwin, User: ctuser, Password: ctpass
-  # Hypertable: sensor_readings (auto-created via init.sql)
+  # TIMESCALEDB
   # ============================================================================
   timescaledb:
     image: timescale/timescaledb:latest-pg16
     container_name: i2-timescaledb
     hostname: timescaledb
+
     ports:
       - "5432:5432"
+
     environment:
       POSTGRES_DB: campustwin
       POSTGRES_USER: ctuser
       POSTGRES_PASSWORD: ctpass
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_INITDB_ARGS: "-c max_connections=100 -c shared_buffers=256MB"
+
     volumes:
       - timescaledb-data:/var/lib/postgresql/data
       - ./i2-data/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
     networks:
       - dev-tools
+
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "ctuser", "-d", "campustwin" ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
 
   # ============================================================================
-  # REDIS 7.2 (Cache & Pub/Sub)
-  # Port: 6379
-  # Features: AOF persistence, keyspace notifications (Kex), LRU eviction
+  # REDIS
   # ============================================================================
   redis:
     image: redis:7.2-alpine
     container_name: i2-redis
     hostname: redis
+
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --notify-keyspace-events Kex --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+    command: redis-server --appendonly yes --notify-keyspace-events Kex
+
     volumes:
       - redis-data:/data
+
     networks:
       - dev-tools
+
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   # ============================================================================
-  # MINIO (S3-compatible Object Storage for MLflow artifacts)
-  # Port: 9000 (API), 9001 (Console)
-  # Credentials: minioadmin / minioadmin
+  # MINIO
   # ============================================================================
   minio:
     image: minio/minio:latest
     container_name: i2-minio
     hostname: minio
+
     ports:
       - "9000:9000"
       - "9002:9001"
+
+    command: server /data --console-address ":9001"
+
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    command: server /minio-data --console-address ":9001"
+
     volumes:
-      - minio-data:/minio-data
+      - minio-data:/data
+
     networks:
       - dev-tools
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
 
-  # ============================================================================
-  # MINIO BUCKET INITIALIZER
-  # Creates the mlflow-artifacts bucket on first run
-  # ============================================================================
   minio-init:
     image: minio/mc:latest
     container_name: i2-minio-init
+
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
+
+    entrypoint: >
+      /bin/sh -c " sleep 10; mc alias set local http://minio:9000 minioadmin minioadmin; mc mb --ignore-existing local/mlflow-artifacts; "
+
     networks:
       - dev-tools
-    entrypoint: [ "/bin/sh", "-c" ]
-    command: |
-      "
-      mc alias set local http://minio:9000 minioadmin minioadmin
-      mc mb --ignore-existing local/mlflow-artifacts
-      echo 'MinIO bucket mlflow-artifacts ready.'
-      "
-    restart: on-failure
 
   # ============================================================================
-  # POSTGRES (MLflow Backend Database)
-  # Port: 5433
-  # Database: mlflow, User: mlflow, Password: mlflow
+  # MLFLOW POSTGRES
   # ============================================================================
   mlflow-postgres:
     image: postgres:16-alpine
     container_name: i2-mlflow-postgres
     hostname: mlflow-postgres
+
     ports:
       - "5433:5432"
+
     environment:
       POSTGRES_DB: mlflow
       POSTGRES_USER: mlflow
       POSTGRES_PASSWORD: mlflow
-      PGDATA: /var/lib/postgresql/data/pgdata
+
     volumes:
       - mlflow-postgres-data:/var/lib/postgresql/data
+
     networks:
       - dev-tools
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "mlflow", "-d", "mlflow" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   # ============================================================================
-  # MLFLOW TRACKING SERVER
-  # Port: 5000
-  # Backend: PostgreSQL (mlflow-postgres), Artifacts: MinIO S3
+  # MLFLOW SERVER
   # ============================================================================
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.12.1
+    build:
+      context: ./infra/mlflow
+      dockerfile: Dockerfile
+
     container_name: i2-mlflow
     hostname: mlflow
+
     ports:
       - "5000:5000"
+
+    depends_on:
+      - mlflow-postgres
+      - minio-init
+
     environment:
-      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@mlflow-postgres:5432/mlflow
-      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://mlflow-artifacts
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_S3_ENDPOINT_URL: http://minio:9000
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
-      MLFLOW_S3_IGNORE_TLS: "true"
+
     command: >
       mlflow server --backend-store-uri postgresql://mlflow:mlflow@mlflow-postgres:5432/mlflow --default-artifact-root s3://mlflow-artifacts --host 0.0.0.0 --port 5000
-    depends_on:
-      mlflow-postgres:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
+
     networks:
       - dev-tools
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    volumes:
-      - mlflow-data:/mlflow
 
   # ============================================================================
-  # INFLUXDB 2.7 (Secondary Time-series / Metrics Store)
-  # Port: 8086
-  # Initial setup: admin / adminpass, org: campus-org, bucket: campustwin
+  # INFLUXDB
   # ============================================================================
   influxdb:
     image: influxdb:2.7
     container_name: i2-influxdb
     hostname: influxdb
+
     ports:
       - "8086:8086"
+
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: admin
       DOCKER_INFLUXDB_INIT_PASSWORD: adminpass
       DOCKER_INFLUXDB_INIT_ORG: campus-org
       DOCKER_INFLUXDB_INIT_BUCKET: campustwin
-      DOCKER_INFLUXDB_INIT_RETENTION: 30d
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: campus-token-secret-key
+
     volumes:
       - influxdb-data:/var/lib/influxdb2
+
     networks:
       - dev-tools
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8086/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
 
 # ============================================================================
 # VOLUMES
 # ============================================================================
 volumes:
   kafka-data:
-    driver: local
   mqtt-data:
-    driver: local
   mqtt-logs:
-    driver: local
   timescaledb-data:
-    driver: local
   redis-data:
-    driver: local
   minio-data:
-    driver: local
   mlflow-postgres-data:
-    driver: local
-  mlflow-data:
-    driver: local
   influxdb-data:
-    driver: local
 
-# ============================================================================
-# NETWORKS
-# ============================================================================
+    # ============================================================================
+    # NETWORK
+    # ============================================================================
 networks:
   dev-tools:
     driver: bridge
