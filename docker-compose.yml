@@ -95,6 +95,13 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
       SCHEMA_REGISTRY_DEBUG: "false"
       SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: "1"
+      SCHEMA_REGISTRY_KAFKASTORE_INIT_TIMEOUT_MS: "300000"
+      SCHEMA_REGISTRY_KAFKASTORE_TIMEOUT_MS: "30000"
+      SCHEMA_REGISTRY_LEADER_ELIGIBILITY: "false"
+      SCHEMA_REGISTRY_KAFKAGROUP_SESSION_TIMEOUT_MS: "60000"
+      SCHEMA_REGISTRY_KAFKAGROUP_HEARTBEAT_INTERVAL_MS: "10000"
+      SCHEMA_REGISTRY_KAFKAGROUP_REBALANCE_TIMEOUT_MS: "600000"
     depends_on:
       kafka:
         condition: service_healthy
@@ -266,7 +273,9 @@ services:
   # Backend: PostgreSQL (mlflow-postgres), Artifacts: MinIO S3
   # ============================================================================
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.12.1
+    build:
+      context: ./infra/mlflow
+      dockerfile: Dockerfile
     container_name: i2-mlflow
     hostname: mlflow
     ports:
