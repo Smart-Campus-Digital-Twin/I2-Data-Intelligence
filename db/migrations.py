@@ -32,7 +32,7 @@ class MigrationRunner:
             retry_delay_s: Delay between retries in seconds
         """
         self.connection_string = connection_string or os.environ.get(
-            "TIMESCALE_URL",
+            "SQLALCHEMY_URL",
             "postgresql://ctuser:ctpass@localhost:5432/campustwin"
         )
         self.max_retries = max_retries

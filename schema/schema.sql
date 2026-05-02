@@ -497,10 +497,12 @@ GROUP BY DATE_TRUNC('hour', ts), room_id, sensor_type;
 -- ACADEMIC CALENDAR SEED DATA — Events & Holidays
 -- ============================================================================
 
--- Academic Terms (2025-2026)
+-- Academic Terms (2025-2027)
 INSERT INTO academic_terms (term_name, term_type, year, start_date, end_date, description) VALUES
     ('Semester 1 2025-26', 'semester', 2025, '2025-09-01'::DATE, '2025-12-20'::DATE, 'Fall Semester'),
-    ('Semester 2 2025-26', 'semester', 2026, '2026-01-12'::DATE, '2026-05-22'::DATE, 'Spring Semester')
+    ('Semester 2 2025-26', 'semester', 2026, '2026-01-12'::DATE, '2026-05-22'::DATE, 'Spring Semester'),
+    ('Semester 1 2026-27', 'semester', 2026, '2026-09-01'::DATE, '2026-12-20'::DATE, 'Fall Semester'),
+    ('Semester 2 2026-27', 'semester', 2027, '2027-01-12'::DATE, '2027-05-22'::DATE, 'Spring Semester')
 ON CONFLICT DO NOTHING;
 
 -- Campus Events (deterministic, venue-mapped, fill-factored) — Matches PDF simulator
@@ -532,7 +534,7 @@ FROM academic_terms t,
     ('Architecture', '2026-12-18'::DATE),
     ('Faculty Mix', '2026-12-25'::DATE)
 ) depts(dept_name, event_date)
-WHERE t.year = 2026
+WHERE depts.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Food Festival (2-3 per year: March, September, November)
@@ -550,7 +552,7 @@ FROM academic_terms t,
     ('2026-09-18'::DATE),
     ('2026-11-14'::DATE)
 ) dates(event_date)
-WHERE t.year = 2026
+WHERE dates.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Symposium (4 per year: Apr/May, Oct/Nov)
@@ -569,7 +571,7 @@ FROM academic_terms t,
     ('2026-10-16'::DATE, 'Sustainability'),
     ('2026-11-27'::DATE, 'Future Leaders')
 ) symp(event_date, title)
-WHERE t.year = 2026
+WHERE symp.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- New Student Orientation (2 per year: Feb, Aug)
@@ -586,7 +588,7 @@ FROM academic_terms t,
     ('2026-02-13'::DATE),
     ('2026-08-21'::DATE)
 ) orient(event_date)
-WHERE t.year = 2026
+WHERE orient.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Career Fair (2 per year: May, Nov)
@@ -603,7 +605,7 @@ FROM academic_terms t,
     ('2026-05-08'::DATE),
     ('2026-11-06'::DATE)
 ) fair(event_date)
-WHERE t.year = 2026
+WHERE fair.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Sports Meet (~35% weekends Oct-Apr, probabilistic)
@@ -626,7 +628,7 @@ FROM academic_terms t,
     ('2027-03-13'::DATE, 'Handball Tournament'),
     ('2027-04-10'::DATE, 'Tennis Championship')
 ) sm(event_date, name)
-WHERE t.year IN (2026, 2027)
+WHERE sm.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Concert/Cultural Night (~1 per month, 60% chance on fixed monthly date)
@@ -653,7 +655,7 @@ FROM academic_terms t,
     ('2026-11-21'::DATE, 'Cultural Fest'),
     ('2026-12-19'::DATE, 'Year-End Gala')
 ) cn(event_date, theme)
-WHERE t.year = 2026
+WHERE cn.event_date BETWEEN t.start_date AND t.end_date
 ON CONFLICT DO NOTHING;
 
 -- Workshop (~45% weekday chance at NA Hall)
@@ -727,9 +729,10 @@ BEGIN
         LIMIT 1
     ),
     event_info AS (
-        SELECT ce.occupancy_factor
+        SELECT (ce.occupancy_factor_min + ce.occupancy_factor_max) / 2.0 as occupancy_factor
         FROM calendar_events ce
         WHERE CURRENT_DATE BETWEEN ce.start_date AND ce.end_date
+        ORDER BY ce.event_id
         LIMIT 1
     )
     SELECT 
@@ -748,9 +751,10 @@ DECLARE
     v_factor FLOAT;
 BEGIN
     -- Check if there's a calendar event on this date
-    SELECT occupancy_factor INTO v_factor
+    SELECT (occupancy_factor_min + occupancy_factor_max) / 2.0 INTO v_factor
     FROM calendar_events
     WHERE check_date BETWEEN start_date AND end_date
+    ORDER BY event_id
     LIMIT 1;
     
     -- Default to 1.0 if no special event
