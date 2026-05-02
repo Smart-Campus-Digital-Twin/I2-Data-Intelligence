@@ -10,14 +10,16 @@ This migration sets up:
 - Campus events: Padura, Food Festival, Symposium, Orientation, Career Fair, Sports, Concerts, Workshops
 """
 
+from pathlib import Path
 from alembic import op
 import sqlalchemy as sa
 
 
 def upgrade() -> None:
     """Apply initial schema."""
-    # Read and execute the full schema.sql
-    with open("schema/schema.sql", "r") as f:
+    # Read and execute the full schema.sql with file-relative path
+    schema_path = Path(__file__).resolve().parents[2] / "schema" / "schema.sql"
+    with schema_path.open("r", encoding="utf-8") as f:
         schema_sql = f.read()
     op.execute(sa.text(schema_sql))
 
@@ -25,6 +27,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Rollback: drop all I2 schema objects."""
     # Drop in reverse dependency order
+    op.execute("DROP TABLE IF EXISTS public_holidays_2026 CASCADE;")
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_recent_anomalies CASCADE;")
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_latest_occupancy CASCADE;")
     op.execute("DROP FUNCTION IF EXISTS get_occupancy_factor_for_date(DATE) CASCADE;")
