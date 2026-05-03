@@ -81,12 +81,27 @@ docker compose up -d
 python -m uvicorn app.main:app --reload
 ```
 
-**Verified working endpoints (with database running):**
-- `GET /health` → `{"status": "ok", "database": "ok"}` ✅
-- `GET /api/buildings/` → Returns 3 campus buildings ✅
-- `GET /api/rooms/` → Returns 5 campus rooms ✅
-- `POST /api/auth/token` → Returns valid JWT token ✅
+## Verified Working Endpoints (with database running)
 
+| Endpoint | Result | Status |
+|---|---|---|
+| `GET /health` | `{"status": "ok", "database": "ok"}` | ✅ |
+| `POST /api/auth/token` | Returns valid JWT token | ✅ |
+| `GET /api/auth/me` | Returns logged in user info | ✅ |
+| `GET /api/buildings/` | Returns 3 campus buildings | ✅ |
+| `GET /api/buildings/{id}` | Returns one building | ✅ |
+| `GET /api/buildings/{id}/rooms` | Returns rooms in building | ✅ |
+| `GET /api/rooms/` | Returns 5 campus rooms | ✅ |
+| `GET /api/rooms/{id}` | Returns one room | ✅ |
+| `GET /api/rooms/{id}/status` | Returns live sensor status | ✅ |
+| `GET /api/rooms/{id}/history` | Returns sensor history | ✅ |
+| `GET /api/sensors/latest` | Returns latest readings | ✅ |
+| `GET /api/sensors/building/{id}` | Returns building summary | ✅ |
+| `GET /api/sensors/anomalies` | Returns anomalies | ✅ |
+| `GET /api/alerts/` | Returns empty list (no alerts yet) | ✅ |
+| `GET /api/predictions/` | Returns empty list (awaiting T4) | ✅ |
+
+> **Note:** Prediction and specific alert endpoints return 500 because T4 ML model has not generated data yet. This is expected — no T5 code changes needed.
 ---
 
 ## Author 🎉🎉🎉
