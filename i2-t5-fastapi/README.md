@@ -49,3 +49,46 @@ python -m uvicorn app.main:app --reload
 
 ## JWT (matches T6 Socket.IO relay)
 Same JWT_SECRET shared with T6 so tokens work across both services.
+
+## Known Issues & Dependencies
+
+### TimescaleDB Compression Policy
+The T1 `init.sql` contains compression and retention policy lines that 
+cause TimescaleDB (latest-pg16) to crash on startup. To fix, comment 
+out these two lines in `i2-data/init.sql`:
+
+```sql
+-- SELECT add_compression_policy('sensor_readings', INTERVAL '7 days', if_not_exists => true);
+-- SELECT add_retention_policy('sensor_readings', INTERVAL '90 days', if_not_exists => true);
+```
+
+This is a T1 infrastructure issue — no changes needed in T5 code.
+
+---
+
+1️⃣ ## Running With Full Stack
+
+This API requires T1's Docker stack to be running first.
+
+2️⃣ **Start T1 infrastructure (from I2-Data-Intelligence folder):**
+```bash
+git checkout docker_compose
+docker compose up -d
+```
+
+3️⃣ **Then start this API (from i2-t5-fastapi folder):**
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+**Verified working endpoints (with database running):**
+- `GET /health` → `{"status": "ok", "database": "ok"}` ✅
+- `GET /api/buildings/` → Returns 3 campus buildings ✅
+- `GET /api/rooms/` → Returns 5 campus rooms ✅
+- `POST /api/auth/token` → Returns valid JWT token ✅
+
+---
+
+## Author 🎉🎉🎉
+**Member 5 — I2-T5: FastAPI REST API**
+Smart Campus Digital Twin — Group I, Subgroup I2
