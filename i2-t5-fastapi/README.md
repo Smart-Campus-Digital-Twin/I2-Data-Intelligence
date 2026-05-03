@@ -50,7 +50,7 @@ python -m uvicorn app.main:app --reload
 ## JWT (matches T6 Socket.IO relay)
 Same JWT_SECRET shared with T6 so tokens work across both services.
 
-## Known Issues & Dependencies
+🛑🛑🛑 ## Known Issues & Dependencies
 
 ### TimescaleDB Compression Policy
 The T1 `init.sql` contains compression and retention policy lines that 
