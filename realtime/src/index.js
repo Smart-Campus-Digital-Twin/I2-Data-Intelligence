@@ -25,12 +25,16 @@ dotenv.config();
 // ============================================================================
 
 const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET;
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL;
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM;
+const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
 
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
+if (!KEYCLOAK_URL || !KEYCLOAK_REALM || !KEYCLOAK_CLIENT_ID) {
+  throw new Error(
+    'KEYCLOAK_URL, KEYCLOAK_REALM, and KEYCLOAK_CLIENT_ID environment variables are required'
+  );
 }
 
 // ============================================================================
@@ -72,7 +76,7 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
 });
 
-const jwtService = new JWTService(JWT_SECRET);
+const jwtService = new JWTService(KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID);
 const redisService = new RedisService(REDIS_URL);
 
 // Track connected clients by namespace
@@ -86,16 +90,16 @@ const connectedClients = {
 // ============================================================================
 
 /**
- * JWT auth middleware for Socket.IO
+ * JWT auth middleware for Socket.IO (async)
  */
-const authMiddleware = (socket, next) => {
+const authMiddleware = async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
     if (!token) {
       return next(new Error('AUTH_FAILED: No token provided'));
     }
 
-    const userInfo = jwtService.getUserInfo(token);
+    const userInfo = await jwtService.getUserInfo(token);
     if (!userInfo) {
       return next(new Error('AUTH_FAILED: Invalid token'));
     }
@@ -103,7 +107,7 @@ const authMiddleware = (socket, next) => {
     socket.userInfo = userInfo;
     socket.userId = userInfo.userId;
     socket.username = userInfo.username;
-    socket.isAdmin = jwtService.isAdmin({ role: userInfo.role });
+    socket.isAdmin = userInfo.role === 'admin';
 
     next();
   } catch (error) {
@@ -190,7 +194,7 @@ twinNs.on('connection', (socket) => {
   });
 
   socket.on('error', (error) => {
-    console.error(`[/twin] Socket error (${clientId}):`, error);
+    console.error(`[/twin] Socket error (${clientId}):`, error?.message || error);
   });
 });
 
@@ -220,7 +224,7 @@ adminNs.on('connection', (socket) => {
   });
 
   socket.on('error', (error) => {
-    console.error(`[/admin] Socket error (${clientId}):`, error);
+    console.error(`[/admin] Socket error (${clientId}):`, error?.message || error);
   });
 });
 
