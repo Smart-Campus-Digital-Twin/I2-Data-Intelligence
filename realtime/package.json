@@ -23,7 +23,9 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "prom-client": "^15.0.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-cache": "^5.1.2",
+    "node-rsa": "^1.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
