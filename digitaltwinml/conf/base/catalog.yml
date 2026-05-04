@@ -1,0 +1,89 @@
+# =============================================================================
+# Smart Campus Digital Twin — Data Catalog
+# =============================================================================
+
+# ── Raw Datasets ──────────────────────────────────────────────────────────────
+
+energy_raw:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/energy_forecast_2024_2025.csv
+  load_args:
+    parse_dates: [timestamp]
+
+canteen_raw:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/canteen_congestion_2024_2025.csv
+  load_args:
+    parse_dates: [timestamp]
+
+library_raw:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/library_congestion_2024_2025.csv
+  load_args:
+    parse_dates: [timestamp]
+
+# ── Preprocessed / Feature-Engineered ─────────────────────────────────────────
+
+energy_features:
+  type: pandas.ParquetDataset
+  filepath: data/04_feature/energy_features.parquet
+
+canteen_features:
+  type: pandas.ParquetDataset
+  filepath: data/04_feature/canteen_features.parquet
+
+library_features:
+  type: pandas.ParquetDataset
+  filepath: data/04_feature/library_features.parquet
+
+# ── Models ────────────────────────────────────────────────────────────────────
+
+energy_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/energy_model.pickle
+  versioned: true
+
+canteen_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/canteen_model.pickle
+  versioned: true
+
+library_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/library_model.pickle
+  versioned: true
+
+# ── Model Outputs (test-set predictions) ──────────────────────────────────────
+
+energy_test_predictions:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/energy_test_predictions.csv
+
+canteen_test_predictions:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/canteen_test_predictions.csv
+
+library_test_predictions:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/library_test_predictions.csv
+
+# ── Reporting ─────────────────────────────────────────────────────────────────
+
+energy_feature_importance:
+  type: matplotlib.MatplotlibDataset
+  filepath: data/08_reporting/energy_feature_importance.png
+  versioned: true
+
+canteen_feature_importance:
+  type: matplotlib.MatplotlibDataset
+  filepath: data/08_reporting/canteen_feature_importance.png
+  versioned: true
+
+library_feature_importance:
+  type: matplotlib.MatplotlibDataset
+  filepath: data/08_reporting/library_feature_importance.png
+  versioned: true
+
+insights_report:
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/insights_report.csv

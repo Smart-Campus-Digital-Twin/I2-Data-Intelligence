@@ -1,0 +1,27 @@
+# =============================================================================
+# Smart Campus Digital Twin — Model Parameters
+# =============================================================================
+
+# Train/Test split: 80% train, 20% test (random shuffle)
+test_size: 0.2
+
+energy_model_options:
+  target: total_energy_kwh
+  n_estimators: 300
+  max_depth: 8
+  learning_rate: 0.05
+  random_state: 42
+
+canteen_model_options:
+  target: avg
+  n_estimators: 200
+  max_depth: 6
+  learning_rate: 0.08
+  random_state: 42
+
+library_model_options:
+  target: avg
+  n_estimators: 200
+  max_depth: 6
+  learning_rate: 0.08
+  random_state: 42
