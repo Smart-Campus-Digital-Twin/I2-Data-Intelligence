@@ -193,6 +193,38 @@ services:
       test: [ "CMD", "redis-cli", "ping" ]
 
   # ============================================================================
+  # SPARK STREAM PROCESSOR
+  # ============================================================================
+  spark-processor:
+    build:
+      context: ./streaming/spark
+      dockerfile: Dockerfile
+
+    container_name: i2-spark-processor
+    hostname: spark-processor
+
+    env_file: .env
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_TOPICS=sensor.raw,sensor.processed
+      - TIMESCALE_URL=postgresql://ctuser:ctpass@timescaledb:5432/campustwin
+      - REDIS_URL=redis://redis:6379
+      - STREAM_WINDOW=5 seconds
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    networks:
+      - dev-tools
+
+    restart: unless-stopped
+
+  # ============================================================================
   # MINIO
   # ============================================================================
   minio:
