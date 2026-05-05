@@ -1,6 +1,9 @@
-# I2-Data-Intelligence: Smart Campus Analytics Layer
+# I2-Data-Intelligence
 
-Data & intelligence layer for the Smart Campus Digital Twin system. Provides real-time data analytics, ML model serving, and live event streaming.
+Real-time analytics, ML serving, and live event streaming for Smart Campus Digital Twin.
+
+**Tech Stack**: Python (Spark, FastAPI), Node.js (Socket.IO), Redis, TimescaleDB, Kafka, MLflow  
+**Status**: 83% Complete (5/6 tasks)
 
 ## Architecture
 
@@ -58,25 +61,35 @@ Data & intelligence layer for the Smart Campus Digital Twin system. Provides rea
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Task Status
+
+| Task  | Title                | Status      | Location             |
+| ----- | -------------------- | ----------- | -------------------- |
+| I2-T1 | Docker Compose Stack | ✅ Complete | `docker-compose.yml` |
+| I2-T2 | TimescaleDB Schema   | ✅ Complete | `schema/schema.sql`  |
+| I2-T3 | Spark Streaming      | ✅ Complete | `streaming/spark/`   |
+| I2-T4 | ML Service           | 📋          | —                    |
+| I2-T5 | FastAPI REST API     | ✅ Complete | `i2-t5-fastapi/`     |
+| I2-T6 | Socket.IO Relay      | ✅ Complete | `realtime/`          |
+
 ## Quick Start
 
 ### 1. Setup Environment
 
-```bash
+````bash
+# 1. Setup
 cd I2-Data-Intelligence
 cp .env.example .env
-# Edit .env with your secrets (JWT_SECRET, passwords, etc.)
-```
+# Edit .env with your secrets
 
 ### 2. Start All Services
-
 ```bash
 docker compose up -d
-```
+````
 
-> The `spark-processor` service is now included as part of the I2 T3 analytics pipeline.
+# 3. Check status
 
-### 3. Verify Services
+docker compose ps
 
 **TimescaleDB**:
 
@@ -102,11 +115,8 @@ docker exec i2-kafka kafka-topics.sh --list --bootstrap-server localhost:9092
 
 ```bash
 curl http://localhost:4000/health
-curl http://localhost:4000/metrics | grep socket_io
+curl http://localhost:5000/  # MLflow UI
 ```
-
-**MLflow**:
-Open http://localhost:5000 in browser
 
 ## Completed Tasks
 
@@ -173,30 +183,13 @@ Open http://localhost:5000 in browser
 
 ```
 I2-Data-Intelligence/
-├── schema/
-│   └── schema.sql                    # Full TimescaleDB schema with academic calendar
-├── alembic/
-│   ├── alembic.ini
-│   ├── env.py
-│   └── versions/
-│       └── 001_initial_schema.py    # Versioned migration
-├── db/
-│   └── migrations.py                 # Programmatic migration runner
-├── realtime/
-│   ├── src/
-│   │   ├── index.js                  # Socket.IO main server
-│   │   └── services/
-│   │       ├── jwt.js                # JWT validation
-│   │       └── redis.js              # Redis Pub/Sub
-│   ├── package.json
-│   ├── Dockerfile
-│   └── .env.example
-├── infra/
-│   └── mosquitto/
-│       └── mosquitto.conf
-├── docker-compose.yml                # Full I2 stack
-├── .env.example                      # Environment template
-└── README.md                         # This file
+├── docker-compose.yml       # All 9 services
+├── schema/                  # TimescaleDB schema
+├── alembic/                 # Schema migrations
+├── i2-t5-fastapi/           # FastAPI REST API
+├── realtime/                # Socket.IO relay
+├── streaming/spark/         # Spark streaming job
+└── infra/                   # Infrastructure configs
 ```
 
 ## Socket.IO Client Example
