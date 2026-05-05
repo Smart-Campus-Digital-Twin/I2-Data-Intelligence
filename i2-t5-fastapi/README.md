@@ -50,22 +50,6 @@ python -m uvicorn app.main:app --reload
 ## JWT (matches T6 Socket.IO relay)
 Same JWT_SECRET shared with T6 so tokens work across both services.
 
-🛑🛑🛑 ## Known Issues & Dependencies
-
-### TimescaleDB Compression Policy
-The T1 `init.sql` contains compression and retention policy lines that 
-cause TimescaleDB (latest-pg16) to crash on startup. To fix, comment 
-out these two lines in `i2-data/init.sql`:
-
-```sql
--- SELECT add_compression_policy('sensor_readings', INTERVAL '7 days', if_not_exists => true);
--- SELECT add_retention_policy('sensor_readings', INTERVAL '90 days', if_not_exists => true);
-```
-
-This is a T1 infrastructure issue — no changes needed in T5 code.
-
----
-
 1️⃣ ## Running With Full Stack
 
 This API requires T1's Docker stack to be running first.
@@ -93,17 +77,41 @@ python -m uvicorn app.main:app --reload
 | `GET /api/buildings/{id}/rooms` | Returns rooms in building | ✅ |
 | `GET /api/rooms/` | Returns 5 campus rooms | ✅ |
 | `GET /api/rooms/{id}` | Returns one room | ✅ |
-| `GET /api/rooms/{id}/status` | Returns live sensor status | ✅ |
-| `GET /api/rooms/{id}/history` | Returns sensor history | ✅ |
-| `GET /api/sensors/latest` | Returns latest readings | ✅ |
-| `GET /api/sensors/building/{id}` | Returns building summary | ✅ |
-| `GET /api/sensors/anomalies` | Returns anomalies | ✅ |
-| `GET /api/alerts/` | Returns empty list (no alerts yet) | ✅ |
-| `GET /api/predictions/` | Returns empty list (awaiting T4) | ✅ |
+| `GET /api/rooms/{id}/status` | Returns live sensor data (energy, humidity, occupancy, temperature) | ✅ |
+| `GET /api/rooms/{id}/history` | Returns sensor history by type and time range | ✅ |
+| `GET /api/sensors/latest` | Returns latest reading for all rooms | ✅ |
+| `GET /api/sensors/building/{id}` | Returns building sensor summary | ✅ |
+| `GET /api/sensors/anomalies` | Returns recent anomalies | ✅ |
+| `GET /api/alerts/` | Returns active alerts (empty until T3 generates data) | ✅ |
+| `GET /api/alerts/all` | Returns all alerts | ✅ |
+| `PATCH /api/alerts/{id}/resolve` | Admin only — resolves an alert | ✅ |
+| `GET /api/predictions/` | Returns all predictions (empty until T4 runs ML model) | ✅ |
+| `GET /api/predictions/{room_id}/energy` | Returns energy prediction for room | ⏳ |
+| `GET /api/predictions/{room_id}/occupancy` | Returns occupancy prediction for room | ⏳ |
 
-> **Note:** Prediction and specific alert endpoints return 500 because T4 ML model has not generated data yet. This is expected — no T5 code changes needed.
+> ✅ = Fully working and tested  
+> ⏳ = Endpoint ready and correct — returns 404 until T4 ML model generates prediction data
+
 ---
 
-## Author 🎉🎉🎉
-**Member 5 — I2-T5: FastAPI REST API**
+## Prerequisites
+
+Requires T1's Docker stack to be running first.
+
+Start from the `docker_compose` branch of I2-Data-Intelligence:
+
+```bash
+git checkout docker_compose
+docker compose up -d
+```
+
+Then start this API:
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+---
+
+## Author
+**Member 5 — I2-T5: FastAPI REST API**  
 Smart Campus Digital Twin — Group I, Subgroup I2
