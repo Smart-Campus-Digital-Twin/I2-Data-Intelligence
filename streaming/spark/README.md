@@ -2,16 +2,30 @@
 
 ## Responsibilities
 
-- Consume data from Kafka
-- Parse JSON sensor data
-- Perform window aggregations
+- Consume sensor events from Kafka topics `sensor.raw` and `sensor.processed`
+- Parse JSON sensor payloads
+- Perform 5-second tumbling window aggregations
 - Detect anomalies
-- Output to TimescaleDB and Redis (to be integrated)
+- Persist aggregates to TimescaleDB `sensor_readings`
+- Update Redis room state and publish real-time events
 
-## Current Status
+## Running the Job
 
-- Kafka stream connected (assumed)
-- JSON parsing implemented
-- Aggregation implemented
-- Anomaly detection implemented
-- Console output for testing
+### Local Python run
+
+```bash
+cd I2-Data-Intelligence/streaming/spark
+python -m pip install -r requirements.txt
+python spark_stream_job.py
+```
+
+### Docker run
+
+```bash
+cd I2-Data-Intelligence
+docker compose up -d spark-processor
+```
+
+### Script alias
+
+If you want a shorter entrypoint, `streaming/spark/spark_job.py` forwards to the main Spark job.
