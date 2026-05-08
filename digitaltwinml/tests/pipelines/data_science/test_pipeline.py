@@ -41,7 +41,7 @@ def test_split_data(dummy_data, dummy_parameters):
 def test_split_data_missing_price(dummy_data, dummy_parameters):
     dummy_data_missing_price = dummy_data.drop(columns="price")
     with pytest.raises(KeyError) as e_info:
-        split_data(dummy_data_missing_price, dummy_parameters["model_options"])
+        X_train, X_test, y_train, y_test = split_data(dummy_data_missing_price, dummy_parameters["model_options"])
 
     assert "price" in str(e_info.value)
 

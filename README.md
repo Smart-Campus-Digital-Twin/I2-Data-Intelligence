@@ -61,6 +61,8 @@ Real-time analytics, ML serving, and live event streaming for Smart Campus Digit
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+<<<<<<< HEAD
+
 ## Task Status
 
 | Task  | Title                | Status      | Location             |
@@ -77,14 +79,31 @@ Real-time analytics, ML serving, and live event streaming for Smart Campus Digit
 ### 1. Setup Environment
 
 ````bash
+=======
+
+## Task Status
+
+| Task | Title | Status | Location |
+|------|-------|--------|----------|
+| I2-T1 | Docker Compose Stack | ✅ Complete | `docker-compose.yml` |
+| I2-T2 | TimescaleDB Schema | ✅ Complete | `schema/schema.sql` |
+| I2-T3 | Spark Streaming | ✅ Complete | `streaming/spark/` |
+| I2-T4 | ML Service | 📋  | — |
+| I2-T5 | FastAPI REST API | ✅ Complete | `i2-t5-fastapi/` |
+| I2-T6 | Socket.IO Relay | ✅ Complete | `realtime/` |
+
+## Quick Start
+
+```bash
+>>>>>>> main
 # 1. Setup
 cd I2-Data-Intelligence
 cp .env.example .env
 # Edit .env with your secrets
 
-### 2. Start All Services
-```bash
+# 2. Start all services
 docker compose up -d
+<<<<<<< HEAD
 ````
 
 # 3. Check status
@@ -114,11 +133,23 @@ docker exec i2-kafka kafka-topics.sh --list --bootstrap-server localhost:9092
 **Socket.IO**:
 
 ```bash
+=======
+
+# 3. Check status
+docker compose ps
+
+# 4. Verify services
+psql -h localhost -U ctuser -d campustwin -c "SELECT * FROM rooms;"
+redis-cli ping
+curl http://localhost:8000/api/v1/health
+>>>>>>> main
 curl http://localhost:4000/health
 curl http://localhost:5000/  # MLflow UI
 ```
 
 ## Completed Tasks
+
+<<<<<<< HEAD
 
 ### ✅ I2-T2: TimescaleDB Schema + Migrations
 
@@ -147,39 +178,71 @@ curl http://localhost:5000/  # MLflow UI
     - Keyspace notifications for node heartbeat expiration
   - Prometheus metrics: connected clients, event counters
   - Health check endpoints: `/health`, `/metrics`, `/info`
-  - Graceful shutdown with signal handlers
+  - # Graceful shutdown with signal handlers
 
-## Services
+### ✅ I2-T1: Docker Compose Infrastructure
 
-### TimescaleDB (I2-T2)
+All 9 services running with health checks and volumes:
 
-- **Port**: 5432
-- **Database**: `campustwin`
-- **Tables**: sensor_readings, academic_terms, calendar_events, alerts, rooms, buildings
-- **Compression**: 7 days
-- **Retention**: 90 days
+- **Kafka** (9092): KRaft mode, auto-created topics
+- **Schema Registry** (8081), **MQTT** (1883), **TimescaleDB** (5432)
+- **Redis** (6379), **MLflow** (5000), **InfluxDB** (8086), **MinIO** (9000)
 
-### Redis
+### ✅ I2-T2: TimescaleDB Schema
 
-- **Port**: 6379
-- **Features**: Keyspace notifications enabled, Pub/Sub channels for real-time events
+Core tables and functions:
 
-### Socket.IO Real-Time Relay (I2-T6)
+- `sensor_readings` hypertable (1-day chunks, 7-day compression, 90-day retention)
+- `rooms`, `buildings`, `alerts`, `academic_terms`, `calendar_events`
+- Functions: `get_current_academic_term()`, `get_occupancy_factor_for_date()`
+- Alembic migrations for versioning
+  > > > > > > > main
 
-- **Port**: 4000
-- **Namespaces**: `/twin` (auth), `/admin` (admin)
-- **Events**: room.update, alert.new, node.offline
-- **Metrics**: Prometheus-compatible endpoint
+### ✅ I2-T3: Spark Structured Streaming
 
-### Other Services
+Reads `sensor.raw` from Kafka, processes with 5-second windows:
 
-- **Kafka**: Port 9092 (KRaft mode)
-- **Schema Registry**: Port 8081
-- **MQTT**: Port 1883
-- **MLflow**: Port 5000
-- **InfluxDB**: Port 8086
+- Filters null errors, detects anomalies
+- Writes to: TimescaleDB (sensor_readings), Redis (room state), Kafka (sensor.processed)
+- Metrics logged to stdout
 
-## File Structure
+### ✅ I2-T5: FastAPI REST API (Port 8000)
+
+Secured with JWT HS256. Core endpoints:
+
+- `POST /api/v1/auth/token` — Get JWT
+- `GET /api/v1/rooms`, `/rooms/{id}`, `/rooms/{id}/history`, `/predictions`, `/alerts`, `/buildings`
+- `GET /api/v1/health`, `/metrics` — Service health & Prometheus metrics
+
+### ✅ I2-T6: Socket.IO Real-Time Relay (Port 4000)
+
+Node.js + Express with JWT auth:
+
+- Namespaces: `/twin` (authenticated), `/admin` (admin-only)
+- Subscribes to Redis: `room-updates` → emits `room.update`, `alert-events` → emits `alert.new`
+- Metrics: Connected clients, events emitted
+
+### 📋 I2-T4: ML Service (TODO)
+
+Not yet merged.
+
+## Services Reference
+
+| Service             | Port | Purpose                  | Health Check                               |
+| ------------------- | ---- | ------------------------ | ------------------------------------------ |
+| **Kafka**           | 9092 | Event streaming          | `kafka-topics.sh --list ...`               |
+| **Schema Registry** | 8081 | Kafka schema management  | `curl http://localhost:8081/subjects`      |
+| **MQTT Broker**     | 1883 | IoT device communication | `mosquitto_sub -h localhost -t test`       |
+| **TimescaleDB**     | 5432 | Analytics (I2-T2)        | `psql -h localhost ...`                    |
+| **Redis**           | 6379 | Caching & Pub/Sub        | `redis-cli ping`                           |
+| **MinIO**           | 9000 | S3-compatible storage    | `curl http://localhost:9000`               |
+| **MLflow**          | 5000 | Model tracking           | `http://localhost:5000`                    |
+| **MLflow Postgres** | 5433 | MLflow backend DB        | `psql -p 5433 ...`                         |
+| **InfluxDB**        | 8086 | Metrics                  | `curl http://localhost:8086/health`        |
+| **FastAPI**         | 8000 | REST API (I2-T5)         | `curl http://localhost:8000/api/v1/health` |
+| **Socket.IO**       | 4000 | Real-time Relay (I2-T6)  | `curl http://localhost:4000/health`        |
+
+## Project Structure
 
 ```
 I2-Data-Intelligence/
@@ -192,9 +255,11 @@ I2-Data-Intelligence/
 └── infra/                   # Infrastructure configs
 ```
 
-## Socket.IO Client Example
+## Common Commands
 
-```javascript
+<<<<<<< HEAD
+
+````javascript
 const socket = io("http://localhost:4000/twin", {
   auth: {
     token: "eyJhbGc...", // JWT from FastAPI
@@ -210,12 +275,39 @@ socket.on("room.update", (roomState) => {
 socket.on("alert.new", (alert) => {
   console.log("New alert:", alert);
 });
-```
+=======
+```bash
+# Start/Stop
+docker compose up -d
+docker compose down
+docker compose ps
 
-## Academic Calendar Features
+# Database
+psql -h localhost -U ctuser -d campustwin
+redis-cli
 
-The schema supports flexible academic calendar management:
+# Logs
+docker compose logs -f i2-t5-fastapi
+docker compose logs -f realtime
 
+# Test API
+curl -X GET http://localhost:8000/api/v1/health
+
+# Check Kafka
+docker exec i2-kafka kafka-topics.sh --list --bootstrap-server localhost:9092
+>>>>>>> main
+````
+
+## Troubleshooting
+
+| Issue                   | Fix                                                              |
+| ----------------------- | ---------------------------------------------------------------- |
+| Containers not starting | `docker compose down -v && docker compose up -d`                 |
+| Connection refused      | Check `docker compose ps`, verify port not in use                |
+| JWT auth fails          | Verify `JWT_SECRET` in `.env` matches all services               |
+| Kafka topics missing    | Wait 60s for auto-creation, or check `docker compose logs kafka` |
+
+<<<<<<< HEAD
 **Supported Event Types**:
 
 - `holiday`: Campus holidays (low/no occupancy)
@@ -260,10 +352,9 @@ SELECT get_occupancy_factor_for_date('2025-12-25'::DATE);
 - **I2-T1**: Refine docker-compose with Kafka topic auto-creation and health checks
 - **I2-T3**: Implement Spark Structured Streaming job (populates Redis & TimescaleDB)
 - **I2-T5**: Build FastAPI REST API (uses TimescaleDB & Redis)
-- **I3**: Integrate Socket.IO client in Next.js frontend
+- # **I3**: Integrate Socket.IO client in Next.js frontend
+  > > > > > > > main
 
 ---
 
-**Team**: I2 — Data & Intelligence  
-**Status**: ✅ I2-T2 & I2-T6 Complete  
-**Last Updated**: May 2, 2026
+**Last Updated**: May 5, 2026
